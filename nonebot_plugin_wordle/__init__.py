@@ -5,6 +5,7 @@ from io import BytesIO
 from dataclasses import dataclass
 from asyncio import TimerHandle
 from typing import Dict, List, Optional, NoReturn
+from models.bag_user import BagUser
 
 from nonebot.typing import T_State
 from nonebot.matcher import Matcher
@@ -46,6 +47,34 @@ __plugin_meta__ = PluginMetadata(
     },
 )
 
+__zx_plugin_name__ = "猜单词"
+__plugin_usage__ = """
+usage：
+    Wordle 猜单词
+    答案为指定长度单词，发送对应长度单词即可
+    绿色块代表此单词中有此字母且位置正确
+    黄色块代表此单词中有此字母，但该字母所处位置不对
+    灰色块代表此单词中没有此字母
+    猜出单词或用光次数则游戏结束
+    指令：
+        猜单词（需要at）：开始游戏（需要at）
+        可使用 -l/--length 指定单词长度，默认为5
+        可使用 -d/--dic 指定词典，默认为CET4
+        
+        发送“结束”结束游戏；发送“提示”查看提示；
+""".strip()
+__plugin_des__ = "Wordle 猜单词"
+__plugin_type__ = ("群内小游戏",)
+__plugin_cmd__ = ["猜单词", "结束", "提示"]
+__plugin_version__ = 0.1
+__plugin_author__ = "migang & meetwq"
+
+__plugin_settings__ = {
+    "level": 5,
+    "default_status": True,
+    "limit_superuser": False,
+    "cmd": __plugin_cmd__,
+}
 
 parser = ArgumentParser("wordle", description="猜单词")
 parser.add_argument("-l", "--length", type=int, default=5, help="单词长度")
@@ -215,8 +244,11 @@ async def handle_wordle(matcher: Matcher, event: MessageEvent, argv: List[str]):
     result = game.guess(word)
     if result in [GuessResult.WIN, GuessResult.LOSS]:
         games.pop(cid)
+        if result == GuessResult.WIN:
+            await BagUser.add_gold(event.user_id, event.group_id, 200)
+            text = f"\n[CQ:at,qq={event.user_id}]你获得了200金币，目前金币余额为{str(await BagUser.get_gold(event.user_id, event.group_id))}"
         await send(
-            ("恭喜你猜出了单词！" if result == GuessResult.WIN else "很遗憾，没有人猜出来呢")
+            (f"恭喜你猜出了单词！{text}" if result == GuessResult.WIN else "很遗憾，没有人猜出来呢")
             + f"\n{game.result}",
             game.draw(),
         )
