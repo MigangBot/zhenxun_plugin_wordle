@@ -190,7 +190,7 @@ async def handle_wordle(matcher: Matcher, event: MessageEvent, argv: List[str]):
         args = parser.parse_args(argv)
     except ParserExit as e:
         if e.status == 0:
-            await send(__plugin_meta__.usage)
+            await send(__plugin_usage__)
         await send()
 
     options = Options(**vars(args))
